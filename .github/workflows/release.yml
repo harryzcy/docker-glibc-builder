@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release on GitHub
+    if: github.repository_owner == 'harryzcy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Publish Release
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })
+            let releaseId = null;
+            for (const release of releases) {
+              if (release.draft) {
+                releaseId = release.id
+                break
+              }
+            }
+
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              tag_name: '${{ github.ref_name }}',
+              name: 'Release ${{ github.ref_name }}',
+              draft: context.eventName != 'push'
+            })
+
+  release-docker:
+    name: Release Docker Image
+    if: github.repository_owner == 'harryzcy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
+        with:
+          images: |
+            ghcr.io/harryzcy/docker-glibc-builder
+
+      - name: Set up tags
+        uses: actions/github-script@v7
+        env:
+          IMAGE_NAME: ghcr.io/harryzcy/glibc-builder
+        with:
+          script: |
+            const image_name = process.env.IMAGE_NAME
+            const tag_name = process.env.GITHUB_REF_NAME
+            let [version, sequence] = tag_name.split('-')
+            if (!sequence) sequence = '0'
+            const [major, minor] = version.slice(1).split('.')
+            const tags = [
+              `${image_name}:latest`,
+              `${image_name}:${major}`,
+              `${image_name}:${major}.${minor}`,
+              `${image_name}:${major}.${minor}-${sequence}`
+            ]
+            core.exportVariable('IMAGE_TAGS', tags.join(','))
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64/v8
+          push: true
+          tags: ${{ env.IMAGE_TAGS }}
+          labels: ${{ steps.meta.outputs.labels }}
