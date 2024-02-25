@@ -28,6 +28,7 @@ jobs:
           platforms: linux/amd64,linux/arm64/v8
           tags: ghcr.io/harryzcy/glibc-builder:ci
           push: false
+          load: true
 
       - name: Show images
         run: docker images
