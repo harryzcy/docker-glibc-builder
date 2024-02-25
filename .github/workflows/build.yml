@@ -15,24 +15,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
-        with:
-          images: |
-            ghcr.io/harryzcy/docker-glibc-builder
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=ci
-
       - name: Build docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: glibc-builder:ci
           push: false
 
       - name: Build glibc
