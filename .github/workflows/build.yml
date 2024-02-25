@@ -29,11 +29,6 @@ jobs:
           tags: glibc-builder:ci
           push: false
 
-      - name: Build glibc
-        run: docker run --rm --env GLIBC_VERSION --env STDOUT=1 glibc-builder:ci > glibc-bin-$GLIBC_VERSION-0-$(uname -m).tar.gz
-        env:
-          GLIBC_VERSION: 2.38
-
       - name: Build assets
         run: |
           docker run --platform linux/arm64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-aarch64.tar.gz
