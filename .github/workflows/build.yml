@@ -25,7 +25,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha
+            type=raw,value=ci
 
       - name: Build docker image
         uses: docker/build-push-action@v5
@@ -36,6 +36,6 @@ jobs:
           push: false
 
       - name: Build glibc
-        run: docker run --rm --env GLIBC_VERSION --env STDOUT=1 glibc-builder > glibc-bin-$GLIBC_VERSION-0-$(uname -m).tar.gz
+        run: docker run --rm --env GLIBC_VERSION --env STDOUT=1 glibc-builder:ci > glibc-bin-$GLIBC_VERSION-0-$(uname -m).tar.gz
         env:
           GLIBC_VERSION: 2.38
