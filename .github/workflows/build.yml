@@ -20,4 +20,10 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          tags: glibc-builder:ci
           push: false
+
+      - name: Build glibc
+        run: docker run --rm --env GLIBC_VERSION --env STDOUT=1 glibc-builder:ci > glibc-bin-$GLIBC_VERSION-0-$(uname -m).tar.gz
+        env:
+          GLIBC_VERSION: 2.38
