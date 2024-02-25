@@ -88,8 +88,8 @@ jobs:
 
       - name: Build assets
         run: |
-          docker run --platform linux/arm64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-arm64.tar.gz
-          docker run --platform linux/amd64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-amd64.tar.gz
+          docker run --platform linux/arm64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-aarch64.tar.gz
+          docker run --platform linux/amd64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-x86_64.tar.gz
         env:
           GLIBC_VERSION: 2.38
 
