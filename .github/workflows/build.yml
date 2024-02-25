@@ -29,6 +29,9 @@ jobs:
           tags: ghcr.io/harryzcy/glibc-builder:ci
           push: false
 
+      - name: Show images
+        run: docker images
+
       - name: Build assets
         run: |
           docker run --platform linux/arm64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:ci $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-aarch64.tar.gz
