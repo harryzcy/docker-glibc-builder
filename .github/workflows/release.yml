@@ -16,51 +16,35 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - name: Publish Release
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { data: releases } = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            })
-            let releaseId = null;
-            for (const release of releases) {
-              if (release.draft) {
-                releaseId = release.id
-                break
-              }
-            }
-
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: releaseId,
-              tag_name: '${{ github.ref_name }}',
-              name: 'Release ${{ github.ref_name }}',
-              draft: context.eventName != 'push'
-            })
-
-  release-docker:
-    name: Release Docker Image
-    if: github.repository_owner == 'harryzcy'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
       packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - uses: release-drafter/release-drafter@3f0f87098bd6b5c5b9a36d49c41d998ea58f9348 # v6
+        id: release_drafter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Release
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ steps.release_drafter.outputs.id }},
+              tag_name: '${{ github.ref_name }}',
+              name: 'Release ${{ github.ref_name }}',
+              draft: context.eventName != 'push'
+            });
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
         with:
           images: |
-            ghcr.io/harryzcy/docker-glibc-builder
+            ghcr.io/harryzcy/glibc-builder
 
       - name: Set up tags
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
@@ -102,3 +86,16 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_TAGS }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build assets
+        run: |
+          docker run --platform linux/arm64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-aarch64.tar.gz
+          docker run --platform linux/amd64 --env STDOUT=1 ghcr.io/harryzcy/glibc-builder:latest $GLIBC_VERSION /usr/glibc-compat > glibc-bin-$GLIBC_VERSION-0-x86_64.tar.gz
+        env:
+          GLIBC_VERSION: 2.38
+
+      - name: Upload assets to Release
+        uses: shogo82148/actions-upload-release-asset@c91b7fd867cf280772374042252f0dc8e1ade751 # v1
+        with:
+          upload_url: ${{ steps.release_drafter.outputs.upload_url }}
+          asset_path: glibc-bin-*.tar.gz
