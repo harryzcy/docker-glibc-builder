@@ -1,4 +1,4 @@
-FROM ubuntu:22.04@sha256:f9d633ff6640178c2d0525017174a688e2c1aef28f0a0130b26bd5554491f0da
+FROM ubuntu:24.04@sha256:99c35190e22d294cdace2783ac55effc69d32896daaa265f0bbedbcde4fbe3e5
 ENV DEBIAN_FRONTEND=noninteractive \
 	GLIBC_VERSION=2.38 \
 	PREFIX_DIR=/usr/glibc-compat
